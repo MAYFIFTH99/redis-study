@@ -2,6 +2,9 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.4'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'java-test-fixtures'
+    id 'jacoco'
+    id "io.freefair.lombok" version "8.6"
 }
 
 group = 'inflearn'
@@ -23,17 +26,57 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    intTest {
+        java {
+            srcDirs("src/intTest/java")
+            compileClasspath += sourceSets.main.output + test.output
+            runtimeClasspath += sourceSets.main.output + test.output
+        }
+    }
+}
+
+configurations {
+    intTestImplementation.extendsFrom testImplementation
+    intTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    //starter
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'com.h2database:h2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+    //database
     runtimeOnly 'com.mysql:mysql-connector-j'
+    runtimeOnly 'com.h2database:h2'
+    intTestImplementation 'com.github.codemonstur:embedded-redis:1.4.3'
+
+    //lombok
+    compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    //test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring3x:4.16.1'
+
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    afterEvaluate {
+        classDirectories.setFrom(
+                files(classDirectories.files.collect {
+                    fileTree(dir: it, exclude: ["**/config/*"])
+                })
+        )
+    }
 }
